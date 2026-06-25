@@ -66,7 +66,7 @@ def carregar_dados_iniciais():
 
     df_final['Nota_Especifica'] = df_final['DS_VT_ACE_OCE'].apply(calcular_nota)
     
-    print("✅ Base completa carregada com Sucesso!")
+    print("Base completa carregada")
     return df_final, mapa_regioes, indices_descartados
 
 # ==========================================
@@ -104,7 +104,7 @@ def preparar_dados_tematicos(df_filtrado, mapa_regioes, indices_descartados):
 # MÓDULO 1: OPÇÕES PÚBLICAS
 # ==========================================
 def opcao_1_tematico_publicas(df_final, mapa_regioes, indices_descartados):
-    print("\n⏳ Gerando Mapa de Calor e Planilha (Públicas)...")
+    print("\nGerando Mapa de Calor e Planilha (Públicas)...")
     df_publicas = df_final[df_final['Tipo_Instituicao'] == 'Pública']
     df_pivot = preparar_dados_tematicos(df_publicas, mapa_regioes, indices_descartados)
     
@@ -117,17 +117,17 @@ def opcao_1_tematico_publicas(df_final, mapa_regioes, indices_descartados):
     plt.xlabel('')
     plt.tight_layout()
     plt.savefig('mapa_de_calor_publicas.png', dpi=300)
-    print("✅ SUCESSO! Arquivos 'mapa_de_calor_publicas.png' e 'planilha_tematica_publicas.xlsx' gerados.")
+    print("SUCESSO! Arquivos 'mapa_de_calor_publicas.png' e 'planilha_tematica_publicas.xlsx' gerados.")
 
 def opcao_2_mapa_publicas(df_final):
-    print("\n⏳ Calculando Desempenho Geral (Públicas)...")
+    print("\n Calculando Desempenho Geral (Públicas)...")
     df_publicas = df_final[df_final['Tipo_Instituicao'] == 'Pública']
     medias_regionais = df_publicas.groupby('Nome_Regiao')['Nota_Especifica'].mean().reset_index()
-    print("\n📊 Desempenho Médio Geral por Região:")
+    print("\nDesempenho Médio Geral por Região:")
     print(medias_regionais.to_string(index=False))
     
     if HAS_MAP_LIBS:
-        print("⏳ Baixando mapa geográfico...")
+        print("Baixando mapa geográfico...")
         br_regioes = geobr.read_region(year=2020)
         mapa_traducao = {'Norte': 'Norte', 'Nordeste': 'Nordeste', 'Sudeste': 'Sudeste', 'Sul': 'Sul', 'Centro Oeste': 'Centro-Oeste'}
         br_regioes['Nome_Regiao'] = br_regioes['name_region'].map(mapa_traducao)
@@ -145,10 +145,10 @@ def opcao_2_mapa_publicas(df_final):
         plt.axis('off')
         plt.tight_layout()
         plt.savefig('mapa_brasil_publicas.png', dpi=300)
-        print("✅ Mapa visual salvo como 'mapa_brasil_publicas.png'.")
+        print("Mapa visual salvo como 'mapa_brasil_publicas.png'.")
 
 def opcao_3_categorias_publicas(df_final):
-    print("\n⏳ Calculando desempenho Federal, Estadual, Municipal...")
+    print("\nCalculando desempenho Federal, Estadual, Municipal...")
     df_publicas = df_final[df_final['Tipo_Instituicao'] == 'Pública']
     resumo_cat = df_publicas.groupby(['Nome_Regiao', 'Categoria_Admin'])['Nota_Especifica'].mean().reset_index()
     resumo_cat.rename(columns={'Nota_Especifica': 'Nota Média (%)'}, inplace=True)
@@ -165,12 +165,12 @@ def opcao_3_categorias_publicas(df_final):
         
     plt.tight_layout()
     plt.savefig('comparativo_categorias_publicas.png', dpi=300)
-    print("✅ Gráfico salvo como 'comparativo_categorias_publicas.png'.")
+    print("Gráfico salvo como 'comparativo_categorias_publicas.png'.")
 
 def opcao_4_renda_publicas(df_final):
-    print("\n⏳ Calculando Relação Institucional entre Renda e Desempenho...")
+    print("\nCalculando Relação Institucional entre Renda e Desempenho...")
     if not os.path.exists('microdados2021_arq14.txt'):
-        print("🚨 ERRO: O arquivo 'microdados2021_arq14.txt' não está na pasta!")
+        print("ERRO: O arquivo 'microdados2021_arq14.txt' não está na pasta!")
         return
 
     df_renda = pd.read_csv('microdados2021_arq14.txt', sep=';', usecols=['CO_CURSO', 'QE_I08'], dtype=str)
@@ -181,15 +181,10 @@ def opcao_4_renda_publicas(df_final):
         'D': '4. De 4,5 a 6 Salários', 'E': '5. De 6 a 10 Salários', 'F': '6. De 10 a 30 Salários', 'G': '7. Acima de 30 Salários'
     }
     
-    # === AQUI ESTAVA O SEU ERRO! A SOLUÇÃO "À PROVA DE BALAS" ===
-    # Remove aspas, espaços em branco e converte para maiúsculo para forçar o reconhecimento do dicionário
     df_renda['QE_I08'] = df_renda['QE_I08'].astype(str).str.replace('"', '').str.strip().str.upper()
     df_renda['Faixa de Renda'] = df_renda['QE_I08'].map(dicionario_renda)
-    
-    # Remove as rendas inválidas ANTES de agrupar, protegendo a função 'mode()'
     df_renda = df_renda.dropna(subset=['Faixa de Renda'])
-    # ==========================================================
-
+    
     renda_curso = df_renda.groupby('CO_CURSO')['Faixa de Renda'].agg(lambda x: x.mode()[0] if not x.mode().empty else np.nan).reset_index()
     renda_curso.rename(columns={'Faixa de Renda': 'Renda Predominante do Curso'}, inplace=True)
     
@@ -199,7 +194,7 @@ def opcao_4_renda_publicas(df_final):
     df_cruzado = pd.merge(nota_curso, renda_curso, on='CO_CURSO', how='inner').dropna()
     
     if df_cruzado.empty:
-        print("🚨 ERRO: Nenhum dado foi encontrado após cruzar as notas com as rendas! Verifique se o arquivo arq14 pertence ao ENADE 2021.")
+        print("ERRO: Nenhum dado encontrado após cruzar as notas com as rendas!")
         return
         
     resumo = df_cruzado.groupby('Renda Predominante do Curso')['Nota_Especifica'].mean().reset_index()
@@ -212,17 +207,17 @@ def opcao_4_renda_publicas(df_final):
     plt.ylabel('Renda Predominante dos Alunos')
     plt.tight_layout()
     plt.savefig('renda_vs_desempenho_publicas.png', dpi=300)
-    print("✅ Gráfico salvo como 'renda_vs_desempenho_publicas.png'.")
+    print("Gráfico salvo como 'renda_vs_desempenho_publicas.png'.")
 
 # ==========================================
 # MÓDULO 2: OPÇÕES PRIVADAS (PARTICULARES)
 # ==========================================
 def opcao_5_tematico_privadas(df_final, mapa_regioes, indices_descartados):
-    print("\n⏳ Gerando Mapa de Calor e Planilha (Apenas Particulares)...")
+    print("\nGerando Mapa de Calor e Planilha (Apenas Particulares)...")
     df_privadas = df_final[df_final['Tipo_Instituicao'] == 'Privada'].copy()
     
     if df_privadas.empty:
-        print("🚨 Nenhuma universidade privada foi encontrada na base!")
+        print("Nenhuma universidade privada foi encontrada na base!")
         return
 
     df_pivot = preparar_dados_tematicos(df_privadas, mapa_regioes, indices_descartados)
@@ -236,10 +231,10 @@ def opcao_5_tematico_privadas(df_final, mapa_regioes, indices_descartados):
     plt.xlabel('')
     plt.tight_layout()
     plt.savefig('mapa_de_calor_privadas.png', dpi=300)
-    print("✅ SUCESSO! Arquivos 'mapa_de_calor_privadas.png' e 'planilha_tematica_privadas.xlsx' gerados.")
+    print("Arquivos 'mapa_de_calor_privadas.png' e 'planilha_tematica_privadas.xlsx' gerados.")
 
 def opcao_6_categorias_privadas(df_final):
-    print("\n⏳ Calculando desempenho Particulares (Com Fins e Sem Fins Lucrativos)...")
+    print("\n Calculando desempenho Particulares (Com Fins e Sem Fins Lucrativos)...")
     df_privadas = df_final[df_final['Tipo_Instituicao'] == 'Privada'].copy()
     df_privadas = df_privadas[df_privadas['Categoria_Admin'].isin(['Privada (Com fins lucrativos)', 'Privada (Sem fins lucrativos)'])]
 
@@ -258,7 +253,97 @@ def opcao_6_categorias_privadas(df_final):
         
     plt.tight_layout()
     plt.savefig('comparativo_categorias_privadas.png', dpi=300)
-    print("✅ Gráfico salvo como 'comparativo_categorias_privadas.png'.")
+    print(" Gráfico salvo como 'comparativo_categorias_privadas.png'.")
+
+# ==========================================
+# MÓDULO 3: ANÁLISES DE PERFIL (GERAL)
+# ==========================================
+def opcao_7_trabalho(df_final):
+    print("\n⏳ Processando dados sobre Situação de Trabalho (arq16)...")
+    if not os.path.exists('microdados2021_arq16.txt'):
+        print("ERRO: O arquivo 'microdados2021_arq16.txt' não está na pasta!")
+        print("Vá no ZIP original do INEP e copie o arq16 para cá.")
+        return
+
+    df_trab = pd.read_csv('microdados2021_arq16.txt', sep=';', usecols=['CO_CURSO', 'QE_I10'], dtype=str)
+    df_trab['CO_CURSO'] = pd.to_numeric(df_trab['CO_CURSO'], errors='coerce')
+    
+    dic_trab = {
+        'A': '1. Não trabalha',
+        'B': '2. Trabalha eventualmente',
+        'C': '3. Trabalha até 20h semanais',
+        'D': '4. Trabalha de 21 a 39h semanais',
+        'E': '5. Trabalha 40h ou mais semanais'
+    }
+    
+    df_trab['QE_I10'] = df_trab['QE_I10'].astype(str).str.replace('"', '').str.strip().str.upper()
+    df_trab['Perfil de Trabalho'] = df_trab['QE_I10'].map(dic_trab)
+    df_trab = df_trab.dropna(subset=['Perfil de Trabalho'])
+    
+    trab_curso = df_trab.groupby('CO_CURSO')['Perfil de Trabalho'].agg(lambda x: x.mode()[0] if not x.mode().empty else np.nan).reset_index()
+    trab_curso.rename(columns={'Perfil de Trabalho': 'Carga de Trabalho Predominante da Turma'}, inplace=True)
+    
+    nota_curso = df_final.groupby('CO_CURSO')['Nota_Especifica'].mean().reset_index()
+    df_cruzado = pd.merge(nota_curso, trab_curso, on='CO_CURSO', how='inner').dropna()
+    
+    resumo = df_cruzado.groupby('Carga de Trabalho Predominante da Turma')['Nota_Especifica'].mean().reset_index()
+    resumo.rename(columns={'Nota_Especifica': 'Nota Média da Instituição (%)'}, inplace=True)
+    
+    print("\nCarga de Trabalho vs. Desempenho")
+    print(resumo.to_string(index=False))
+    
+    plt.figure(figsize=(10, 6))
+    sns.barplot(x='Nota Média da Instituição (%)', y='Carga de Trabalho Predominante da Turma', data=resumo, palette='mako', order=sorted(resumo['Carga de Trabalho Predominante da Turma'].unique()))
+    plt.title('Carga de Trabalho vs. Desempenho Acadêmico\nCiência da Computação Bacharelado - ENADE 2021', fontsize=14, fontweight='bold')
+    plt.xlabel('Nota Média na Componente Específica (%)')
+    plt.ylabel('Carga de Trabalho Predominante da Turma')
+    plt.tight_layout()
+    plt.savefig('trabalho_vs_desempenho.png', dpi=300)
+    print(" Gráfico salvo como 'trabalho_vs_desempenho.png'.")
+
+def opcao_8_escola(df_final):
+    print("\n⏳ Processando dados sobre Origem Escolar (arq23)...")
+    if not os.path.exists('microdados2021_arq23.txt'):
+        print("ERRO: O arquivo 'microdados2021_arq23.txt' não está na pasta!")
+        print("Vá no ZIP original do INEP e copie o arq23 para cá.")
+        return
+
+    df_esc = pd.read_csv('microdados2021_arq23.txt', sep=';', usecols=['CO_CURSO', 'QE_I17'], dtype=str)
+    df_esc['CO_CURSO'] = pd.to_numeric(df_esc['CO_CURSO'], errors='coerce')
+    
+    dic_esc = {
+        'A': '1. Todo em Escola Pública',
+        'B': '2. Todo em Escola Privada',
+        'C': '3. Todo no Exterior',
+        'D': '4. A maior parte em Escola Pública',
+        'E': '5. A maior parte em Escola Privada',
+        'F': '6. Parte no Brasil e Exterior'
+    }
+    
+    df_esc['QE_I17'] = df_esc['QE_I17'].astype(str).str.replace('"', '').str.strip().str.upper()
+    df_esc['Origem Escolar'] = df_esc['QE_I17'].map(dic_esc)
+    df_esc = df_esc.dropna(subset=['Origem Escolar'])
+    
+    esc_curso = df_esc.groupby('CO_CURSO')['Origem Escolar'].agg(lambda x: x.mode()[0] if not x.mode().empty else np.nan).reset_index()
+    esc_curso.rename(columns={'Origem Escolar': 'Origem Escolar Predominante da Turma'}, inplace=True)
+    
+    nota_curso = df_final.groupby('CO_CURSO')['Nota_Especifica'].mean().reset_index()
+    df_cruzado = pd.merge(nota_curso, esc_curso, on='CO_CURSO', how='inner').dropna()
+    
+    resumo = df_cruzado.groupby('Origem Escolar Predominante da Turma')['Nota_Especifica'].mean().reset_index()
+    resumo.rename(columns={'Nota_Especifica': 'Nota Média da Instituição (%)'}, inplace=True)
+    
+    print("\nO Peso da Base: Origem Escolar vs. Desempenho")
+    print(resumo.to_string(index=False))
+    
+    plt.figure(figsize=(10, 6))
+    sns.barplot(x='Nota Média da Instituição (%)', y='Origem Escolar Predominante da Turma', data=resumo, palette='crest', order=sorted(resumo['Origem Escolar Predominante da Turma'].unique()))
+    plt.title('O Peso da Base Educacional: Origem Escolar vs. Desempenho\nCiência da Computação Bacharelado - ENADE 2021', fontsize=14, fontweight='bold')
+    plt.xlabel('Nota Média na Componente Específica (%)')
+    plt.ylabel('Origem Escolar Predominante da Turma')
+    plt.tight_layout()
+    plt.savefig('escola_vs_desempenho.png', dpi=300)
+    print(" Gráfico salvo como 'escola_vs_desempenho.png'.")
 
 # ==========================================
 # MENU PRINCIPAL
@@ -272,15 +357,19 @@ def menu_interativo():
     
     while True:
         print("\n" + "-"*50)
-        print("UNIVERSIDADES PÚBLICAS")
+        print("MÓDULO 1: UNIVERSIDADES PÚBLICAS")
         print("1 - Mapa de Calor Temático e Planilha")
         print("2 - Desempenho Médio Regional (Mapa do Brasil)")
         print("3 - Comparativo Institucional (Federal, Estadual, Municipal)")
         print("4 - Relação Institucional entre Renda e Desempenho")
         
-        print("\nUNIVERSIDADES PARTICULARES")
+        print("\nMÓDULO 2: UNIVERSIDADES PARTICULARES")
         print("5 - Mapa de Calor Temático e Planilha")
         print("6 - Comparativo Institucional (Com Fins e Sem Fins Lucrativos)")
+        
+        print("\nMÓDULO 3: ANÁLISES DE PERFIL (GERAL)")
+        print("7 - O Efeito 'Dev Júnior' (Carga de Trabalho vs Desempenho)")
+        print("8 - O Peso da Base (Origem Escolar vs Desempenho)")
         
         print("\n0 - Sair do Sistema")
         
@@ -292,11 +381,13 @@ def menu_interativo():
         elif escolha == '4': opcao_4_renda_publicas(df_final)
         elif escolha == '5': opcao_5_tematico_privadas(df_final, mapa_regioes, indices_descartados)
         elif escolha == '6': opcao_6_categorias_privadas(df_final)
+        elif escolha == '7': opcao_7_trabalho(df_final)
+        elif escolha == '8': opcao_8_escola(df_final)
         elif escolha == '0':
             print("Saindo...")
             break
         else:
-            print("🚨 Opção inválida. Tente novamente.")
+            print("Opção inválida")
 
 if __name__ == "__main__":
     menu_interativo()
